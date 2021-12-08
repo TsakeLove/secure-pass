@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width"/>
+    <title>Регистрация/Авторизация</title>
+</head>
+<body>
+<h2>Форма регистрации</h2>
+<form name="userForm">
+    <input type="hidden" name="id" value="0"/>
+    <div class="form-group">
+        <label for="email">Email</label>
+        <input class="form-control" name="email"/>
+    </div>
+    <div class="form-group">
+        <label for="password">Password</label>
+        <input class="form-control" name="password"/>
+    </div>
+    <div class="form-group">
+        <label for="phone">Phone Number</label>
+        <input class="form-control" name="phone"/>
+    </div>
+    <div class="panel-body">
+        <button type="submit" class="btn btn-sm btn-primary">Сохранить</button>
+        <a id="reset" class="btn btn-sm btn-primary">Сбросить</a>
+    </div>
+</form>
+<table class="table table-condensed table-striped table-bordered">
+    <tbody>
+    </tbody>
+
+</table>
+<form name="userFormIn">
+    <input type="hidden" name="id" value="0"/>
+    <div class="form-group">
+        <label for="email">Email</label>
+        <input class="form-control" name="email"/>
+    </div>
+    <div class="form-group">
+        <label for="password">Password</label>
+        <input class="form-control" name="password"/>
+    </div>
+    <div class="panel-body">
+        <button type="submit" class="btn btn-sm btn-primary">Войти</button>
+    </div>
+</form>
+<div class="isLog"></div>
+<script>
+
+    async function CreateUser(userEmail, userPassword,phone) {
+        const response = await fetch("/signup", {
+            method: "POST",
+            headers: {"Accept": "application/json", "Content-Type": "application/json"},
+            body: JSON.stringify({
+                userEmail,
+                userPassword,
+                phone
+            })
+        });
+        document.querySelector("tbody").innerHTML = ""
+        console.log(JSON.stringify(response));
+        if (response.ok === true) {
+            try {
+                const message = await response.json();
+                console.log(message);
+                document.querySelector("tbody").append((message));
+            }
+            catch {
+                reset();
+                document.querySelector("tbody").append(("User was created"));
+            }
+        }
+        else {
+            document.querySelector("tbody").innerHTML = "User already exist";
+        }
+    }
+    async function LogIn(userEmail, userPassword) {
+        const response = await fetch("/signin", {
+            method: "POST",
+            headers: {"Accept": "application/json", "Content-Type": "application/json"},
+            body: JSON.stringify({
+                username: userEmail,
+                password: userPassword
+            })
+        });
+        if (response.ok === true) {
+            const userPhone = await response.json();
+            document.querySelector('.isLog').innerHTML = `UserPhone: ${userPhone.userPhone}`;
+        }
+        else  document.querySelector('.isLog').innerHTML = "User not found";
+    }
+    function reset() {
+        const form = document.forms["userForm"];
+        form.reset();
+        form.elements["id"].value = 0;
+    }
+
+    document.getElementById("reset").click(function (e) {
+
+        e.preventDefault();
+        reset();
+    })
+    function checkPhone (phone) {
+        const ukraineCode = '039|067|068|096|097|098|050|066|095|099|063|093|091|092|094'
+        const reg = new RegExp(String.raw`(?<=(^|\n)(\+38)?)(${ukraineCode})\d{7}(?=\r?\n|$)`)
+        if((phone.match(reg))!=null) return true;
+        return false;
+    }
+    function checkEmail (email) {
+        const reg = /^([a-z0-9_-]+\.)*[a-z0-9_-]+@[a-z0-9_-]+(\.[a-z0-9_-]+)*\.[a-z]{2,6}$/
+        if((email.match(reg))!=null) return true;
+        return false;
+    }
+
+    document.forms["userForm"].addEventListener("submit", async e => {
+        e.preventDefault();
+        document.querySelector("tbody").innerHTML = ""
+        const form = document.forms["userForm"];
+        const email = form.elements["email"].value;
+        if(!checkEmail(email))
+        {
+            document.querySelector("tbody").innerHTML = "Invalid email";
+            return
+        }
+        const password = form.elements["password"].value;
+        if(password.length<1)
+        {
+            document.querySelector("tbody").innerHTML = "Empty pass";
+            return;
+        }
+        const phone = form.elements["phone"].value;
+        if(!checkPhone(phone))
+        {
+            document.querySelector("tbody").innerHTML = "Invalid phone";
+            return;
+        }
+        await CreateUser(email, password,phone);
+    });
+    document.forms["userFormIn"].addEventListener("submit", e => {
+        e.preventDefault();
+        const form = document.forms["userFormIn"];
+        const email = form.elements["email"].value;
+        const password = form.elements["password"].value;
+        LogIn(email, password);
+    });
+</script>
+</body>
+</html>
