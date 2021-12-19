@@ -5,8 +5,9 @@ const app = express();
 const jsonParser = express.json();
 const argon2 = require("argon2");
 const db = require("./db");
-
-
+const https = require("https");
+const key = require("./credentials").TLS.key
+const cert = require("./credentials").TLS.cert
 
 app.use(express.static(__dirname + "/public"));
 
@@ -14,9 +15,9 @@ app.post('/signup', jsonParser, async function (req, res) {
     if (!req.body) return res.sendStatus(400);
     let isPassValid = validate(req.body.userEmail, req.body.userPassword);
     if (isPassValid.bool) {
-        let keys = await crypt.encrypt(req.body.phone);
+        //let keys = await crypt.encrypt(req.body.phone);
         argon2.hash(req.body.userPassword).then(hash => {
-            db.insert(req.body.userEmail, hash, keys.phone, keys.iv, keys.phonePassword).then((e) => {
+            db.insert(req.body.userEmail, hash, req.body.phone, "keys.iv", "keys.phonePassword").then((e) => {
                     if (e.oid === 0 && e.rowCount === 0) {
                         res.sendStatus(400);
                         console.log("ALREADY EXIST");
@@ -59,6 +60,6 @@ app.post('/signin', jsonParser, async function (req, res) {
 });
 
 
-app.listen(3000, function () {
+https.createServer({ key, cert }, app).listen(3000, function () {
     console.log("Listening on port 3000...");
 });
